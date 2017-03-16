@@ -168,8 +168,8 @@ begin
   graphics_lenght <= conv_std_logic_vector(MEM_SIZE*8*8, GRAPH_MEM_ADDR_WIDTH);
   
   -- removed to inputs pin
-  direct_mode <= '1';
-  display_mode     <= "10";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
+  direct_mode <= '0';
+  display_mode     <= "01";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
   
   font_size        <= x"1";
   show_frame       <= '1';
@@ -246,16 +246,59 @@ begin
     blue_o             => blue_o     
   );
   
+
   -- na osnovu signala iz vga_top modula dir_pixel_column i dir_pixel_row realizovati logiku koja genereise
   --dir_red
   --dir_green
   --dir_blue
- 
+  process(dir_pixel_column)
+	begin
+		if(dir_pixel_column >=0 and dir_pixel_column < H_RES/8) then
+			dir_red<=x"FF";
+			dir_green<=x"FF";
+			dir_blue<=x"FF";
+		elsif (dir_pixel_column >=H_RES/8 and dir_pixel_column < (H_RES/8)*2) then
+			dir_red<=x"FF";
+			dir_green<=x"9D";
+			dir_blue<=x"00";
+		elsif (dir_pixel_column >=(H_RES/8)*2 and dir_pixel_column < (H_RES/8)*3) then
+			dir_red<=x"00";
+			dir_green<=x"ff";
+			dir_blue<=x"f2";
+		elsif (dir_pixel_column >=(H_RES/8)*3 and dir_pixel_column < (H_RES/8)*4) then
+			dir_red<=x"4c";
+			dir_green<=x"ff";
+			dir_blue<=x"00";	
+		elsif (dir_pixel_column >=(H_RES/8)*4 and dir_pixel_column < (H_RES/8)*5) then
+			dir_red<=x"ff";
+			dir_green<=x"00";
+			dir_blue<=x"f6";
+		elsif (dir_pixel_column >=(H_RES/8)*5 and dir_pixel_column < (H_RES/8)*6) then
+			dir_red<=x"ff";
+			dir_green<=x"00";
+			dir_blue<=x"00";	
+		elsif (dir_pixel_column >=(H_RES/8)*6 and dir_pixel_column < (H_RES/8)*7) then
+			dir_red<=x"00";
+			dir_green<=x"00";
+			dir_blue<=x"ff";	
+		else
+			dir_red<=x"00";
+			dir_green<=x"00";
+			dir_blue<=x"00";	
+		end if;
+	end process;
   -- koristeci signale realizovati logiku koja pise po TXT_MEM
   --char_address
   --char_value
   --char_we
-  
+  process(char_address,char_value)
+  begin
+	  
+	  char_we<='1';
+	  char_address<=conv_std_logic_vector(0,char_address ' length);
+	  char_value<=conv_std_logic_vector(1,char_value ' length);
+		  
+  end process;
   -- koristeci signale realizovati logiku koja pise po GRAPH_MEM
   --pixel_address
   --pixel_value

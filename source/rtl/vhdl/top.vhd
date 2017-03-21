@@ -102,7 +102,7 @@ architecture rtl of top is
       blue_o              : out std_logic_vector(7 downto 0)
     );
   end component;
-  
+	
   component ODDR2
   generic(
    DDR_ALIGNMENT : string := "NONE";
@@ -120,6 +120,22 @@ architecture rtl of top is
     S           : in  std_ulogic := 'L'
   );
   end component;
+  
+  
+  
+  component reg is
+	generic(
+		WIDTH    : positive := 1;
+		RST_INIT : integer := 0
+	);
+	port(
+		i_clk  : in  std_logic;
+		in_rst : in  std_logic;
+		i_d    : in  std_logic_vector(WIDTH-1 downto 0);
+		o_q    : out std_logic_vector(WIDTH-1 downto 0)
+	);
+end component reg;
+  
   
   
   constant update_period     : std_logic_vector(31 downto 0) := conv_std_logic_vector(1, 32);
@@ -156,6 +172,12 @@ architecture rtl of top is
   signal dir_blue            : std_logic_vector(7 downto 0);
   signal dir_pixel_column    : std_logic_vector(10 downto 0);
   signal dir_pixel_row       : std_logic_vector(10 downto 0);
+  
+  signal cnt_reg : std_logic_vector(13 downto 0);
+  signal pixel_counter : std_logic_vector(13 downto 0);
+  signal row_counter : std_logic_vector (13 downto 0);
+  signal pixel_counter_pravi : std_logic_vector (19 downto 0);
+  
 
 begin
 
@@ -169,7 +191,7 @@ begin
   
   -- removed to inputs pin
   direct_mode <= '0';
-  display_mode     <= "01";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
+  display_mode     <= "10";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
   
   font_size        <= x"1";
   show_frame       <= '1';
@@ -246,7 +268,17 @@ begin
     blue_o             => blue_o     
   );
   
-
+	--mem_reg : reg
+--generic map(
+--		WIDTH => 14,
+--		RST_INIT => 0
+--	)
+	--port map(
+--		i_clk => pix_clock_s,
+--		in_rst => vga_rst_n_s,
+--		i_d => cnt_reg,
+--		o_q => char_address
+--	);
   -- na osnovu signala iz vga_top modula dir_pixel_column i dir_pixel_row realizovati logiku koja genereise
   --dir_red
   --dir_green
@@ -291,18 +323,142 @@ begin
   --char_address
   --char_value
   --char_we
-  process(char_address,char_value)
-  begin
+  --process(char_address,char_value)
+ -- begin
 	  
-	  char_we<='1';
-	  char_address<=conv_std_logic_vector(0,char_address ' length);
-	  char_value<=conv_std_logic_vector(1,char_value ' length);
+	 char_we<='1';
+	--  mem_reg_o<=
+	--  char_address<=conv_std_logic_vector(0,char_address ' length);
+	--  char_value<=conv_std_logic_vector(1,char_value ' length);
 		  
-  end process;
+  --end process;
   -- koristeci signale realizovati logiku koja pise po GRAPH_MEM
   --pixel_address
   --pixel_value
   --pixel_we
   
+   --cnt_reg <= char_address + 1 when char_address < 30*40
+     --      else (others => '0');
+	--cnt_reg <= char_address + 1;
+	
+	
+	process(pix_clock_s)begin
+		if(rising_edge(pix_clock_s))then
+			if(pixel_counter = 1199)then
+				pixel_counter <= (others => '0');
+			else
+				pixel_counter <= pixel_counter + 1;
+			end if;
+		end if;
+  end process;
+  
+  
+	process(pix_clock_s)begin
+		if(rising_edge(pix_clock_s))then
+			if(pixel_counter_pravi = 9599)then
+				pixel_counter_pravi <= (others => '0');
+			else
+				pixel_counter_pravi <= pixel_counter_pravi + 1;
+			end if;
+		end if;
+  end process;
+	
+	process(char_address,pixel_counter) begin
+		if(pixel_counter = 41)then
+			char_address<=pixel_counter;
+			char_value <= conv_std_logic_vector(2,6);
+			
+		elsif(pixel_counter=42) then
+			char_address<=pixel_counter;
+			char_value <= conv_std_logic_vector(21,6);
+		elsif(pixel_counter=43) then
+			char_address<=pixel_counter;
+			char_value <= conv_std_logic_vector(18,6);
+		elsif(pixel_counter=44) then
+			char_address<=pixel_counter;
+			char_value <= conv_std_logic_vector(26,6);
+		else
+			char_address<=pixel_counter;
+			char_value <= conv_std_logic_vector(32,6);
+		end if;
+	end process;
+	
+	pixel_we <= '1';
+	
+	
+	process(pixel_counter_pravi) begin
+		if(pixel_counter_pravi = 5600)then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+			
+		elsif(pixel_counter_pravi=5620) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5640) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5660) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5680) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5700) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5720) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5740) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5760) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5780) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5800) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5820) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5840) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5860) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5880) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5900) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5920) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5940) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5960) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=5980) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		elsif(pixel_counter_pravi=6000) then
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"FFFFFFFF";
+		else
+			pixel_address<=pixel_counter_pravi;
+			pixel_value <= x"00000000";
+		end if;
+	end process;
+	
+	
+	
+	
   
 end rtl;

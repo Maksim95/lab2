@@ -54,7 +54,7 @@ architecture rtl of vga is
   component vga_sync is generic (
     HORIZONTAL_RES : natural := 800;
     VERTICAL_RES   : natural := 600;
-    FRAME_SIZE     : natural := 4
+    FRAME_SIZE     : natural := 14
   );
   port (
     clk_i               : in  std_logic;

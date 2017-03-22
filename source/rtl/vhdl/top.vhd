@@ -23,6 +23,8 @@ entity top is
   port (
     clk_i          : in  std_logic;
     reset_n_i      : in  std_logic;
+	 direct_mode_i  : in  std_logic;
+	 display_mode_i : in  std_logic_vector(1 downto 0);
     -- vga
     vga_hsync_o    : out std_logic;
     vga_vsync_o    : out std_logic;
@@ -175,8 +177,11 @@ end component reg;
   
   signal cnt_reg : std_logic_vector(13 downto 0);
   signal pixel_counter : std_logic_vector(13 downto 0);
-  signal row_counter : std_logic_vector (13 downto 0);
+  signal slovo1 : std_logic_vector (13 downto 0);
+  
+  signal timer_slova : std_logic_vector (19 downto 0);
   signal pixel_counter_pravi : std_logic_vector (19 downto 0);
+  signal pixel_pomerac : std_logic_vector (19 downto 0);
   
 
 begin
@@ -190,8 +195,8 @@ begin
   graphics_lenght <= conv_std_logic_vector(MEM_SIZE*8*8, GRAPH_MEM_ADDR_WIDTH);
   
   -- removed to inputs pin
-  direct_mode <= '0';
-  display_mode     <= "10";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
+  -- direct_mode <= '0';
+  -- display_mode     <= "10";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
   
   font_size        <= x"1";
   show_frame       <= '1';
@@ -233,14 +238,14 @@ begin
     clk_i              => clk_i,
     reset_n_i          => reset_n_i,
     --
-    direct_mode_i      => direct_mode,
+    direct_mode_i      => direct_mode_i,
     dir_red_i          => dir_red,
     dir_green_i        => dir_green,
     dir_blue_i         => dir_blue,
     dir_pixel_column_o => dir_pixel_column,
     dir_pixel_row_o    => dir_pixel_row,
     -- cfg
-    display_mode_i     => display_mode,  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
+    display_mode_i     => display_mode_i,  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
     -- text mode interface
     text_addr_i        => char_address,
     text_data_i        => char_value,
@@ -353,6 +358,60 @@ begin
   end process;
   
   
+  
+  	process(pix_clock_s,vga_rst_n_s)begin
+		--if(vga_rst_n_s='0')then
+			--slovo1 <= "00000000000000";
+		--	slovo2 <= "00000000000001";
+		--	slovo3 <= "00000000000010";
+	--		slovo4 <= "00000000000011";
+		--else
+		
+		if(rising_edge(pix_clock_s))then
+			if(timer_slova = 1048574) then
+				timer_slova<="00000000000000000000";
+			else
+				timer_slova<=timer_slova+1;
+			end if;
+			if(timer_slova=1048572)then
+			
+				if(pixel_pomerac = 9599)then
+					pixel_pomerac<=(others=>'0');
+				else
+					pixel_pomerac<=pixel_pomerac+1;
+				end if;
+			
+				if(slovo1 = 1196)then
+					slovo1 <= (others => '0');
+				else
+					slovo1 <= slovo1 + 1;
+				end if;
+				
+				--if(slovo2 = 1197)then
+				--	slovo2 <= "00000000000001";
+				--else
+				--	slovo2 <= slovo2 + 1;
+			--	end if;
+			--	if(slovo3 = 1198)then
+			--		slovo3 <= "00000000000010";
+			--	else
+			--		slovo3 <= slovo3 + 1;
+				--end if;
+			--	if(slovo4 = 1199)then
+			--		slovo4 <= "00000000000011";
+			--	else
+			--		slovo4 <= slovo4 + 1;
+				end if;
+			--end if;
+	--	end if;
+		end if;
+  end process;
+  
+
+  
+  
+  
+  
 	process(pix_clock_s)begin
 		if(rising_edge(pix_clock_s))then
 			if(pixel_counter_pravi = 9599)then
@@ -364,91 +423,91 @@ begin
   end process;
 	
 	process(char_address,pixel_counter) begin
-		if(pixel_counter = 41)then
+		if(pixel_counter = slovo1)then
 			char_address<=pixel_counter;
-			char_value <= conv_std_logic_vector(2,6);
+			char_value <= conv_std_logic_vector(2,6);--B
 			
-		elsif(pixel_counter=42) then
+		elsif(pixel_counter=slovo1+1) then
 			char_address<=pixel_counter;
-			char_value <= conv_std_logic_vector(21,6);
-		elsif(pixel_counter=43) then
+			char_value <= conv_std_logic_vector(21,6);--U
+		elsif(pixel_counter=slovo1+2) then
 			char_address<=pixel_counter;
-			char_value <= conv_std_logic_vector(18,6);
-		elsif(pixel_counter=44) then
+			char_value <= conv_std_logic_vector(18,6);--R
+		elsif(pixel_counter=slovo1+3) then
 			char_address<=pixel_counter;
-			char_value <= conv_std_logic_vector(26,6);
+			char_value <= conv_std_logic_vector(26,6);--Z
 		else
 			char_address<=pixel_counter;
-			char_value <= conv_std_logic_vector(32,6);
+			char_value <= conv_std_logic_vector(32,6);--razmak
 		end if;
 	end process;
 	
 	pixel_we <= '1';
 	
 	
-	process(pixel_counter_pravi) begin
-		if(pixel_counter_pravi = 5600)then
+	process(pixel_counter_pravi,pixel_pomerac) begin
+		if(pixel_counter_pravi = pixel_pomerac)then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
 			
-		elsif(pixel_counter_pravi=5620) then
+		elsif(pixel_counter_pravi=pixel_pomerac+20) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5640) then
+		elsif(pixel_counter_pravi=pixel_pomerac+40) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5660) then
+		elsif(pixel_counter_pravi=pixel_pomerac+60) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5680) then
+		elsif(pixel_counter_pravi=pixel_pomerac+80) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5700) then
+		elsif(pixel_counter_pravi=pixel_pomerac+100) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5720) then
+		elsif(pixel_counter_pravi=pixel_pomerac+120) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5740) then
+		elsif(pixel_counter_pravi=pixel_pomerac+140) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5760) then
+		elsif(pixel_counter_pravi=pixel_pomerac+160) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5780) then
+		elsif(pixel_counter_pravi=pixel_pomerac+180) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5800) then
+		elsif(pixel_counter_pravi=pixel_pomerac+200) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5820) then
+		elsif(pixel_counter_pravi=pixel_pomerac+220) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5840) then
+		elsif(pixel_counter_pravi=pixel_pomerac+240) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5860) then
+		elsif(pixel_counter_pravi=pixel_pomerac+260) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5880) then
+		elsif(pixel_counter_pravi=pixel_pomerac+280) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5900) then
+		elsif(pixel_counter_pravi=pixel_pomerac+300) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5920) then
+		elsif(pixel_counter_pravi=pixel_pomerac+320) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5940) then
+		elsif(pixel_counter_pravi=pixel_pomerac+340) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5960) then
+		elsif(pixel_counter_pravi=pixel_pomerac+360) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=5980) then
+		elsif(pixel_counter_pravi=pixel_pomerac+380) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
-		elsif(pixel_counter_pravi=6000) then
+		elsif(pixel_counter_pravi=pixel_pomerac+400) then
 			pixel_address<=pixel_counter_pravi;
 			pixel_value <= x"FFFFFFFF";
 		else
